@@ -7,9 +7,10 @@ export default class CanvasContainer extends Component {
 
     this.state = {
       painting: false,
-      // canvas: '',
-      points: this.props.points
+      paintings: [this.props.points]
     }
+
+    this.canvas = React.createRef()
 
     this.renderCanvas = this.renderCanvas.bind(this)
     this.randColor = this.randColor.bind(this)
@@ -24,8 +25,18 @@ export default class CanvasContainer extends Component {
     this.renderPoints = this.renderPoints.bind(this)
   }
 
+  componentDidMount() {
+    this.renderCanvas()
+    this.randColor()
+    this.renderPoints()
+  }
+
+  componentDidUpdate() {
+    this.renderPoints()
+  }
+
   randColor() {
-    var colors = [
+    let colors = [
       '#B2FF34',
       '#AB83FA',
       '#FF86C0',
@@ -39,40 +50,15 @@ export default class CanvasContainer extends Component {
       '#FFFFFF',
       '#E4ABFF'
     ]
-    var rand = colors[Math.floor(Math.random() * colors.length)]
 
-    document.getElementById('canvas').style.backgroundColor = rand
+    const rand = colors[Math.floor(Math.random() * colors.length)]
+    const canvas = this.canvas.current
+    canvas.style.backgroundColor = rand
   }
-
-  componentDidMount() {
-    this.renderCanvas()
-    this.randColor()
-    this.renderPoints()
-  }
-  //
-  // componentWillReceiveProps() {
-  //   this.renderPoints()
-  // }
-
-  componentDidUpdate() {
-    this.renderPoints()
-  }
-
-  // generateUUID() {
-  //   let array = new Uint32Array(8)
-  //   window.crypto.getRandomValues(array)
-  //   let str = ''
-  //   for (let i = 0; i < array.length; i++) {
-  //     str += (i < 2 || i > 5 ? '' : '-') + array[i].toString(16).slice(-4)
-  //   }
-  //   return str
-  // }
 
   savePointsFromResponce(data) {
     const { points } = this.props
     let syncpoints = []
-
-    // var syncpoints = ([data] = data.push = [])
 
     syncpoints.forEach((syncpoint) => {
       points.push(data)
@@ -84,7 +70,7 @@ export default class CanvasContainer extends Component {
   }
 
   renderCanvas() {
-    const canvas = document.getElementById('canvas')
+    const canvas = this.canvas.current
 
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
@@ -92,81 +78,59 @@ export default class CanvasContainer extends Component {
     canvas.addEventListener('mousedown', this.handleMouseDown)
     canvas.addEventListener('mouseup', this.handleMouseUp)
     canvas.addEventListener('mousemove', this.handleMouseMove)
-    // canvas.addEventListener('mousemove', this.syncDrawing)
 
-    // const id = this.generateUUID()
-    //
-    // let { canvases } = this.state
-    //
-    // canvases[id] = canvas
-    // console.log(id)
-    //
-    // this.setState({
-    //   canvas
-    // })
+    this.setState({
+      canvasContext: canvas.getContext('2d')
+    })
   }
 
   renderPoints() {
+    const canvas = this.canvas.current
     const ctx = canvas.getContext('2d')
-    const { points } = this.state
+    const { paintings } = this.state
 
-    points.forEach((point) => {
-      ctx.lineWidth = 3 * 2
+    paintings.forEach((painting) => {
+      let prevPoint = false
 
-      ctx.lineTo(point[0], point[1])
-      ctx.stroke()
+      painting.forEach((point) => {
+        if (prevPoint) {
+          ctx.lineWidth = 3 * 2
+          ctx.beginPath()
+          ctx.moveTo(prevPoint[0], prevPoint[1])
+          ctx.lineTo(point[0], point[1])
+          ctx.closePath()
+          ctx.stroke()
+        }
 
-      ctx.beginPath()
-      ctx.arc(point[0], point[1], 3, 0, Math.PI * 2)
-
-      ctx.fill()
-
-      ctx.beginPath()
-      ctx.moveTo(point[0], point[1])
+        prevPoint = point
+      })
     })
   }
 
   handleMouseDown(e) {
+    const { paintings } = this.state
+    paintings.push([])
+
     this.setState({
       painting: true
     })
   }
 
   handleMouseUp(e) {
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-
     this.setState({
       painting: false
     })
   }
 
   handleMouseMove(e) {
-    const ctx = canvas.getContext('2d')
+    let { paintings } = this.state
 
     if (this.state.painting) {
-      console.log(e.clientX, e.clientY)
-      ctx.lineWidth = 3 * 2
-
-      ctx.lineTo(e.clientX, e.clientY)
-      ctx.stroke()
-
-      ctx.beginPath()
-      ctx.arc(e.clientX, e.clientY, 3, 0, Math.PI * 2)
-
-      ctx.fill()
-
-      ctx.beginPath()
-      ctx.moveTo(e.clientX, e.clientY)
+      paintings[paintings.length - 1].push([e.clientX, e.clientY])
     }
 
-    let { points } = this.state
-    points.push([e.clientX, e.clientY])
-    // canvases.points.push([data])
-    // data.push([e.clientX, e.clientY])
-
     this.setState({
-      points
+      paintings
     })
   }
 
@@ -189,34 +153,6 @@ export default class CanvasContainer extends Component {
       })
   }
 
-  // syncDrawing(e, data) {
-  //   const ctx = canvas.getContext('2d')
-  //   console.log(data)
-  //
-  //   if (this.state.painting) {
-  //     console.log(e.clientX, e.clientY)
-  //     ctx.lineWidth = 3 * 2
-  //
-  //     ctx.lineTo(e.clientX, e.clientY)
-  //     ctx.stroke()
-  //
-  //     ctx.beginPath()
-  //     ctx.arc(e.clientX, e.clientY, 3, 0, Math.PI * 2)
-  //
-  //     let { canvases, points } = this.state
-  //     canvases.points.push([data])
-  //
-  //     this.setState({
-  //       canvases
-  //     })
-  //
-  //     ctx.fill()
-  //
-  //     ctx.beginPath()
-  //     ctx.moveTo(e.clientX, e.clientY)
-  //   }
-  // }
-
   handleReceivedCanvas(data) {
     console.log('cableisworking', data)
 
@@ -233,7 +169,7 @@ export default class CanvasContainer extends Component {
           channel={{ channel: 'CanvasChannel' }}
           onReceived={this.handleReceivedCanvas}
         />
-        <canvas id="canvas"></canvas>
+        <canvas ref={this.canvas}></canvas>
         <button className="saveButn" onClick={this.saveCanvas}>
           Сохранить
         </button>
