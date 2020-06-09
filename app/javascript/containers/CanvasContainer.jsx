@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { ActionCable } from 'react-actioncable-provider'
+import { ActionCableConsumer } from 'react-actioncable-provider'
 
 export default class CanvasContainer extends Component {
   constructor(props) {
@@ -56,19 +56,6 @@ export default class CanvasContainer extends Component {
     canvas.style.backgroundColor = rand
   }
 
-  savePointsFromResponce(data) {
-    const { points } = this.props
-    let syncpoints = []
-
-    syncpoints.forEach((syncpoint) => {
-      points.push(data)
-    })
-
-    this.setState({
-      points
-    })
-  }
-
   renderCanvas() {
     const canvas = this.canvas.current
 
@@ -114,54 +101,59 @@ export default class CanvasContainer extends Component {
   }
 
   handleMouseUp(e) {
+    this.saveCanvas()
+
     this.setState({
       painting: false
     })
   }
 
   handleMouseMove(e) {
-    let { paintings } = this.state
+    let { paintings, painting } = this.state
 
-    if (this.state.painting) {
+    if (painting) {
       paintings[paintings.length - 1].push([e.clientX, e.clientY])
-    }
 
-    this.setState({
-      paintings
-    })
+      this.setState({
+        paintings
+      })
+    }
   }
 
   saveCanvas() {
-    const { points } = this.state
+    const { paintings } = this.state
 
     fetch('http://localhost:3000/api/drawroom/sync', {
       method: 'POST', // or 'PUT'
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ points: points })
+      body: JSON.stringify({ points: paintings[paintings.length - 1] })
     })
       // .then((response) => response.json())
       .then((data) => {
-        console.log('Success:', data)
+        // console.log('Success:', data)
       })
       .catch((error) => {
-        console.error('Error:', error)
+        // console.error('Error:', error)
       })
   }
 
   handleReceivedCanvas(data) {
-    console.log('cableisworking', data)
+    // console.log('cableisworking', data)
 
-    data = JSON.parse(data)
+    const { paintings } = this.state
+    paintings.push(data)
 
-    this.savePointsFromResponce(data)
+    this.setState({
+      paintings
+    })
   }
 
   render() {
     return (
       <div className="cover">
-        <ActionCable
+        <ActionCableConsumer
           channel={{ channel: 'CanvasChannel' }}
           onReceived={this.handleReceivedCanvas}
         />

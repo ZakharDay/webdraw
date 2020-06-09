@@ -5,8 +5,8 @@ class Api::DrawroomController < Api::ApplicationController
   end
 
   def sync
-    puts params['drawroom']['points']
-    ActionCable.server.broadcast 'canvas_channel', params['drawroom']['points'].to_json
+    puts params["points"]
+    ActionCable.server.broadcast 'canvas_channel', params["points"]
 
   end
 end
