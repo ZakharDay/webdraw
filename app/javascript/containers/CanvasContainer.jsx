@@ -78,10 +78,6 @@ export default class CanvasContainer extends Component {
     canvas.addEventListener('mousedown', this.handleMouseDown)
     canvas.addEventListener('mouseup', this.handleMouseUp)
     canvas.addEventListener('mousemove', this.handleMouseMove)
-
-    this.setState({
-      canvasContext: canvas.getContext('2d')
-    })
   }
 
   renderPoints() {
@@ -112,7 +108,8 @@ export default class CanvasContainer extends Component {
     paintings.push([])
 
     this.setState({
-      painting: true
+      painting: true,
+      paintings
     })
   }
 
@@ -164,7 +161,6 @@ export default class CanvasContainer extends Component {
   render() {
     return (
       <div className="cover">
-        {this.props.points}
         <ActionCable
           channel={{ channel: 'CanvasChannel' }}
           onReceived={this.handleReceivedCanvas}
